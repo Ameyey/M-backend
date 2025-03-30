@@ -1,5 +1,5 @@
 # Server Are Run .. 
-* npm Start
+* npm run dev
 
 
 
