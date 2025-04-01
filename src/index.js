@@ -4,12 +4,10 @@ import connectDB from "./Db/DB_Conction.js";
 import express from "express";
 
 const app= express()
-
-
-
 connectDB()
+
 .then(()=>{
-  app.listen(process.env.PORT||8000,()=>{
+  app.listen(process.env.PORT||7000,()=>{
     console.log(` Server Runing at PORT : ${process.env.PORT}`)
   })
   app.on("err",(err)=>{
@@ -26,8 +24,6 @@ connectDB()
 
 
 
-
-console.log("5:49:58")
 
 
 
