@@ -3,7 +3,7 @@ class AplError extends Error{
     statusCode,
     meassage = "Someting went wrong",
     errors=[],
-    statck = ""
+    stack = ""
   ){
     super(meassage)
     this.statusCode = statusCode
@@ -12,8 +12,8 @@ class AplError extends Error{
     this.success = false ;
     this.errors= errors
 
-    if(statck){
-      this.statck= statck
+    if(stack){
+      this.stack= stack
     }
     else{
       Error.captureStackTrace(this,this.constructor)
