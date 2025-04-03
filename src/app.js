@@ -10,6 +10,8 @@ app.use(cors({
 }))
 
 
+// console.log("6:52:52")
+
 app.use(express.json({
   limit:"16kb"
 }))
