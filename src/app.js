@@ -9,7 +9,7 @@ app.use(cors({
   credentials:true
 }))
 
-
+console.log("1:22:04")
 
 app.use(express.json({
   limit:"16kb"

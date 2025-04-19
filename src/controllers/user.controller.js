@@ -1,3 +1,4 @@
+import jwt from 'jsonwebtoken'
 import { asyncHandler } from "../utils/asyncHandler.js";
 import {AplError} from '../utils/ApiError.js'
 import {User} from '../models/user.models.js'
@@ -9,11 +10,13 @@ const generateAccessAndRefereshTokens = async(userId)=>{
       const user = await User.findById(userId)
       const accessToken = user.generateAccessToken()
       const refreshToken = user.generateRefreshToken()
+      
 
-      user.refreshToken = refreshToken
-      await user.save({ validateBeforeSave: false })
+      user.refershToken = refreshToken
+      await user.save({validateBeforeSave: false})
 
-      return {accessToken, refreshToken}
+      return {accessToken,refreshToken}
+
    } catch (error){      
       throw new AplError(500 ," Something went wrong while generating referesh and access Token ")
    }
@@ -95,6 +98,9 @@ const loginUser = asyncHandler(async(req,res)=>{
       throw new AplError(400,"User or email is required ")
    }
 
+ 
+
+
    const user = await User.findOne({
       $or:[{username}, {email}]
    })
@@ -110,9 +116,11 @@ const loginUser = asyncHandler(async(req,res)=>{
    }
 
 
-   const {accessToken , refershToken } = await generateAccessAndRefereshTokens(user._id)
+   const {accessToken , refreshToken} = await generateAccessAndRefereshTokens(user._id)
 
-   const loggedInUser = await User.findById(user._id).select("-password -refershToken")
+  
+
+   const loggedInUser = await User.findById(user._id).select("-password -refreshToken")
 
    const options = {
       httpOnly:true,
@@ -121,12 +129,12 @@ const loginUser = asyncHandler(async(req,res)=>{
 
    return res.status(200)
    .cookie("accessToken",accessToken,options)
-   .cookie("refreshToken",refershToken,options)
+   .cookie("refreshToken",refreshToken,options)
    .json(
       new ApiResponse(
          200,
          {
-            user:loggedInUser,accessToken,refershToken
+            user:loggedInUser,accessToken,refreshToken
          },
          "User logged In Successfully "
       )
@@ -140,7 +148,7 @@ const logotUser = asyncHandler(async (req,res)=>{
       req.user._id,
       {
          $set:{
-            refershToken:undefined
+            refreshToken:undefined
          }
       },
       {
@@ -162,9 +170,56 @@ const logotUser = asyncHandler(async (req,res)=>{
 
 })
 
+const refreshAccessToken = asyncHandler (async (req,res)=>{
+   const incomingRefreshToken =  req.cookie.refreshToken || req.body.refreshToken
+
+   if(!incomingRefreshToken){
+      throw new AplError(401,"Unauthorized request ")
+   }
+
+ try {
+   const decodedToken = jwt.verify(
+     incomingRefreshToken,
+     process.env.REFRESH_TOKEN_SECRET
+   )
+  
+   const user = await User.findById(decodedToken?._id)
+   if(!user){
+     throw new AplError(401,"Invalid refresh token")
+   }
+   
+   if(incomingRefreshToken !== user?.refershToken ){
+     throw new AplError(401 , "Refersh Token is expird or Used ")
+   }
+  
+   const options={
+     httpOnly:true,
+     secure:true
+   }
+  
+   const {accessToken, newRefershToken}=  await generateAccessAndRefereshTokens(user._id) 
+  
+   return res
+   .status(200)
+   .cookie("accessToken",accessToken ,options)
+   .cookie("refershToken",newRefershToken , options)
+   .json(
+     new ApiResponse(
+        200,
+        {accessToken ,refershToken : newRefershToken},
+        "Access token refreshed"
+     )
+   )
+  
+ } catch (error) {
+   throw new AplError(401 ,error?.message || "Invalid refresh token ")
+ }
+})
+
 export {
    registerUser,
    loginUser,
-   logotUser
+   logotUser,
+   refreshAccessToken
 
 }
